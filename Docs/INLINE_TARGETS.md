@@ -10,7 +10,8 @@
 port-knocker -t "proto:host:port;proto:host:port;..." [-d delay] [-v]
 ```
 
-### Параметры:
+### Параметры
+
 - `proto` - протокол: `tcp` или `udp`
 - `host` - IP адрес или доменное имя
 - `port` - номер порта (1-65535)
@@ -20,26 +21,31 @@ port-knocker -t "proto:host:port;proto:host:port;..." [-d delay] [-v]
 ## Примеры использования
 
 ### Простой порт-кнокинг
+
 ```bash
 ./port-knocker -t "tcp:192.168.1.1:22" -v
 ```
 
 ### Последовательность портов
+
 ```bash
 ./port-knocker -t "tcp:server.com:1000;tcp:server.com:2000;tcp:server.com:3000" -d 1s -v
 ```
 
 ### Смешанные протоколы
+
 ```bash
 ./port-knocker -t "tcp:host:80;udp:host:53;tcp:host:443" -d 500ms -v
 ```
 
 ### Ваша последовательность
+
 ```bash
 ./port-knocker -t "tcp:37.38.39.40:27383;tcp:37.38.39.40:38648;tcp:37.38.39.40:50305" -d 1s -v
 ```
 
 ### С ожиданием соединения
+
 ```bash
 ./port-knocker -t "tcp:host:443" -w -v
 ```
@@ -76,4 +82,4 @@ sudo tcpdump -nn dst host 37.38.39.40 and \(port 27383 or port 38648 or port 503
 
 # В другом терминале - port knocking
 ./port-knocker -t "tcp:37.38.39.40:27383;tcp:37.38.39.40:38648;tcp:37.38.39.40:50305" -d 1s -v
-``` 
+```
