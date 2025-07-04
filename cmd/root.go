@@ -36,12 +36,12 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "Путь к файлу конфигурации (обязательно)")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "Путь к файлу конфигурации")
 	rootCmd.PersistentFlags().StringVarP(&keyFile, "key", "k", "", "Путь к файлу ключа шифрования")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Подробный вывод")
 	rootCmd.PersistentFlags().BoolVarP(&waitConnection, "wait-connection", "w", false, "Ждать установления соединения (по умолчанию не ждать)")
 
-	rootCmd.MarkPersistentFlagRequired("config")
+	// НЕ делаем config глобально обязательным - проверяем в runKnock
 }
 
 func runKnock(cmd *cobra.Command, args []string) error {

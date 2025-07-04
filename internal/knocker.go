@@ -3,6 +3,7 @@ package internal
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"net"
@@ -127,24 +128,29 @@ func (pk *PortKnocker) loadConfig(configFile, keyFile string) (*Config, error) {
 	return &config, nil
 }
 
-// getEncryptionKey получает ключ шифрования из файла или системной переменной
+// getEncryptionKey получает ключ шифрования из файла или системной переменной и хеширует его
 func (pk *PortKnocker) getEncryptionKey(keyFile string) ([]byte, error) {
+	var rawKey []byte
+	var err error
+
 	if keyFile != "" {
 		// Читаем ключ из файла
-		key, err := os.ReadFile(keyFile)
+		rawKey, err = os.ReadFile(keyFile)
 		if err != nil {
 			return nil, fmt.Errorf("не удалось прочитать файл ключа: %w", err)
 		}
-		return key, nil
+	} else {
+		// Пытаемся получить ключ из системной переменной
+		key := os.Getenv(EncryptionKeyEnvVar)
+		if key == "" {
+			return nil, fmt.Errorf("ключ шифрования не найден ни в файле, ни в переменной %s", EncryptionKeyEnvVar)
+		}
+		rawKey = []byte(key)
 	}
 
-	// Пытаемся получить ключ из системной переменной
-	key := os.Getenv(EncryptionKeyEnvVar)
-	if key == "" {
-		return nil, fmt.Errorf("ключ шифрования не найден ни в файле, ни в переменной %s", EncryptionKeyEnvVar)
-	}
-
-	return []byte(key), nil
+	// Хешируем ключ SHA256 чтобы получить всегда 32 байта для AES-256
+	hash := sha256.Sum256(rawKey)
+	return hash[:], nil
 }
 
 // decrypt расшифровывает данные с помощью AES-GCM

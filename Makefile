@@ -54,11 +54,15 @@ deps: ## Установить зависимости
 
 example-encrypt: ## Пример шифрования конфигурации
 	@echo "$(GREEN)Шифрование примера конфигурации...$(NC)"
-	./${BINARY_NAME} encrypt -i examples/config.yaml -o examples/config.encrypted -k examples/key.txt
+	./${BINARY_NAME} encrypt -c examples/config.yaml -o examples/config.encrypted -k examples/key.txt
 
 example-decrypt: ## Пример расшифровки зашифрованной конфигурации
 	@echo "$(GREEN)Расшифровка зашифрованной конфигурации...$(NC)"
-	./${BINARY_NAME} decrypt -i examples/config.encrypted -o examples/config.decrypted.yaml -k examples/key.txt
+	./${BINARY_NAME} decrypt -c examples/config.encrypted -o examples/config.decrypted.yaml -k examples/key.txt
+
+example-encrypt-alt: ## Пример шифрования с опцией -i
+	@echo "$(GREEN)Шифрование с опцией -i...$(NC)"
+	./${BINARY_NAME} encrypt -i examples/config.yaml -o examples/config.encrypted -k examples/key.txt
 
 example-run: ## Пример запуска с обычной конфигурацией
 	@echo "$(GREEN)Запуск с обычной конфигурацией...$(NC)"

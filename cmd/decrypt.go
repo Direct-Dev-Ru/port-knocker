@@ -8,6 +8,7 @@ import (
 
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 
 	"github.com/spf13/cobra"
 )
@@ -16,7 +17,11 @@ var decryptCmd = &cobra.Command{
 	Use:   "decrypt",
 	Short: "Расшифровать зашифрованный конфиг в открытый YAML",
 	Long:  `Расшифровывает зашифрованный конфигурационный файл (ENCRYPTED:...) в обычный YAML-файл`,
-	RunE:  runDecrypt,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		// Для команды decrypt config не обязателен если есть -i
+		return nil
+	},
+	RunE: runDecrypt,
 }
 
 var (
@@ -26,23 +31,31 @@ var (
 
 func init() {
 	rootCmd.AddCommand(decryptCmd)
-	decryptCmd.Flags().StringVarP(&decryptInputFile, "input", "i", "", "Входной зашифрованный файл")
+	decryptCmd.Flags().StringVarP(&decryptInputFile, "input", "i", "", "Входной зашифрованный файл (если не указан, используется --config)")
 	decryptCmd.Flags().StringVarP(&decryptOutputFile, "output", "o", "", "Выходной YAML-файл")
-	decryptCmd.MarkFlagRequired("input")
 	decryptCmd.MarkFlagRequired("output")
 }
 
 func runDecrypt(cmd *cobra.Command, args []string) error {
-	data, err := os.ReadFile(decryptInputFile)
+	// Определяем входной файл: либо из -i, либо из глобального --config
+	input := decryptInputFile
+	if input == "" {
+		input = configFile
+		if input == "" {
+			return fmt.Errorf("необходимо указать входной файл через -i или --config")
+		}
+	}
+
+	data, err := os.ReadFile(input)
 	if err != nil {
-		return fmt.Errorf("не удалось прочитать входной файл: %w", err)
+		return fmt.Errorf("не удалось прочитать входной файл %s: %w", input, err)
 	}
 
 	if !strings.HasPrefix(string(data), "ENCRYPTED:") {
-		return fmt.Errorf("файл не является зашифрованным (нет префикса ENCRYPTED:)")
+		return fmt.Errorf("файл %s не является зашифрованным (нет префикса ENCRYPTED:)", input)
 	}
 
-	key, err := getEncryptionKey(keyFile)
+	key, err := getDecryptionKeyHashed(keyFile)
 	if err != nil {
 		return fmt.Errorf("не удалось получить ключ шифрования: %w", err)
 	}
@@ -56,8 +69,33 @@ func runDecrypt(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("не удалось записать YAML-файл: %w", err)
 	}
 
-	fmt.Printf("Файл успешно расшифрован: %s\n", decryptOutputFile)
+	fmt.Printf("Файл успешно расшифрован: %s → %s\n", input, decryptOutputFile)
 	return nil
+}
+
+// getDecryptionKeyHashed получает ключ шифрования и хеширует его до 32 байт (аналогично encrypt)
+func getDecryptionKeyHashed(keyFile string) ([]byte, error) {
+	var rawKey []byte
+	var err error
+
+	if keyFile != "" {
+		// Читаем ключ из файла
+		rawKey, err = os.ReadFile(keyFile)
+		if err != nil {
+			return nil, fmt.Errorf("не удалось прочитать файл ключа: %w", err)
+		}
+	} else {
+		// Пытаемся получить ключ из системной переменной
+		key := os.Getenv("PORT_KNOCKER_KEY")
+		if key == "" {
+			return nil, fmt.Errorf("ключ шифрования не найден ни в файле, ни в переменной PORT_KNOCKER_KEY")
+		}
+		rawKey = []byte(key)
+	}
+
+	// Хешируем ключ SHA256 чтобы получить всегда 32 байта
+	hash := sha256.Sum256(rawKey)
+	return hash[:], nil
 }
 
 // decryptData расшифровывает данные с помощью AES-GCM (аналогично internal)

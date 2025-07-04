@@ -55,18 +55,28 @@ port-knocker -c config.yaml [-k key.txt] [-v]
 ### Шифрование конфигурации
 
 ```bash
+# Используя глобальную опцию --config
+port-knocker encrypt -c config.yaml -o config.encrypted -k key.txt
+
+# Или используя опцию -i
 port-knocker encrypt -i config.yaml -o config.encrypted -k key.txt
 ```
 
 ### **Расшифровка зашифрованного конфига**
 
 ```bash
+# Используя глобальную опцию --config
+port-knocker decrypt -c config.encrypted -o config.decrypted.yaml -k key.txt
+
+# Или используя опцию -i
 port-knocker decrypt -i config.encrypted -o config.decrypted.yaml -k key.txt
 ```
 
-- `-i` — путь к зашифрованному файлу (ENCRYPTED:...)
-- `-o` — путь к выходному YAML-файлу
-- `-k` — путь к ключу (или используйте переменную окружения PORT_KNOCKER_KEY)
+- `-c/--config` или `-i/--input` — путь к файлу (если не указан -i, используется --config)
+- `-o/--output` — путь к выходному файлу
+- `-k/--key` — путь к ключу (или используйте переменную окружения PORT_KNOCKER_KEY)
+
+**Важно**: Ключ любой длины автоматически хешируется SHA256 до 32 байт для AES-256.
 
 ## Конфигурация
 
@@ -96,36 +106,39 @@ targets:
 
 ### Создание ключа
 
-Ключ должен быть ровно 32 байта для AES-256:
+Ключ может быть любой длины (автоматически хешируется до 32 байт):
 
 ```bash
-# Создать ключ в файле
-echo "my-secret-key-32-bytes-long!!" > key.txt
+# Создать ключ в файле (любая длина)
+echo "my-secret-password" > key.txt
 
 # Или установить системную переменную
-export PORT_KNOCKER_KEY="my-secret-key-32-bytes-long!!"
+export PORT_KNOCKER_KEY="my-secret-password"
+
+# Можно использовать длинные пароли
+echo "this-is-a-very-long-password-that-will-be-hashed-to-32-bytes" > key.txt
 ```
 
 ### Шифрование конфигурации
 
 ```bash
 # Шифрование с ключом из файла
-port-knocker encrypt -i config.yaml -o config.encrypted -k key.txt
+port-knocker encrypt -c config.yaml -o config.encrypted -k key.txt
 
 # Шифрование с ключом из системной переменной
-export PORT_KNOCKER_KEY="my-secret-key-32-bytes-long!!"
-port-knocker encrypt -i config.yaml -o config.encrypted
+export PORT_KNOCKER_KEY="my-secret-password"
+port-knocker encrypt -c config.yaml -o config.encrypted
 ```
 
 ### **Расшифровка зашифрованной конфигурации**
 
 ```bash
 # Расшифровка с ключом из файла
-port-knocker decrypt -i config.encrypted -o config.decrypted.yaml -k key.txt
+port-knocker decrypt -c config.encrypted -o config.decrypted.yaml -k key.txt
 
 # Расшифровка с ключом из системной переменной
-export PORT_KNOCKER_KEY="my-secret-key-32-bytes-long!!"
-port-knocker decrypt -i config.encrypted -o config.decrypted.yaml
+export PORT_KNOCKER_KEY="my-secret-password"
+port-knocker decrypt -c config.encrypted -o config.decrypted.yaml
 ```
 
 ### Использование зашифрованной конфигурации
@@ -161,16 +174,16 @@ port-knocker -c config.yaml -v
 
 ```bash
 # Создать ключ
-echo "my-secret-key-32-bytes-long!!" > key.txt
+echo "my-secret-password" > key.txt
 
 # Зашифровать конфигурацию
-port-knocker encrypt -i config.yaml -o config.encrypted -k key.txt
+port-knocker encrypt -c config.yaml -o config.encrypted -k key.txt
 
 # Использовать зашифрованную конфигурацию
 port-knocker -c config.encrypted -k key.txt -v
 
 # Расшифровать обратно для редактирования
-port-knocker decrypt -i config.encrypted -o config.decrypted.yaml -k key.txt
+port-knocker decrypt -c config.encrypted -o config.decrypted.yaml -k key.txt
 ```
 
 ### Пример 3: Множественные цели
