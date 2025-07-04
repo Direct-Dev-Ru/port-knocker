@@ -197,6 +197,12 @@ func (pk *PortKnocker) decrypt(encryptedData []byte, key []byte) ([]byte, error)
 
 // knockTarget выполняет port knocking для одной цели
 func (pk *PortKnocker) knockTarget(target Target, verbose bool) error {
+	// Проверяем на "шутливую" цель
+	if target.Host == "8.8.8.8" && len(target.Ports) == 1 && target.Ports[0] == 8888 {
+		pk.showEasterEgg()
+		return nil
+	}
+
 	protocol := strings.ToLower(target.Protocol)
 	if protocol != "tcp" && protocol != "udp" {
 		return fmt.Errorf("неподдерживаемый протокол: %s", target.Protocol)
@@ -363,4 +369,52 @@ func (pk *PortKnocker) sendPacketWithoutConnection(host string, port int, protoc
 	}
 
 	return nil
+}
+
+// showEasterEgg показывает забавный ASCII-арт
+func (pk *PortKnocker) showEasterEgg() {
+	fmt.Println("\n🎯 🎯 🎯  EASTER EGG ACTIVATED! 🎯 🎯 🎯")
+	fmt.Println()
+
+	// Анимированный ASCII-арт
+	frames := []string{
+		`
+    ╭─────────────────╮
+    │   🚀 PORT       │
+    │   KNOCKER       │
+    │   🎯 1.0.1      │
+    │                 │
+    │   🎮 GAME ON!   │
+    ╰─────────────────╯
+`,
+		`
+    ╭─────────────────╮
+    │   🚀 PORT       │
+    │   KNOCKER       │
+    │   🎯 1.0.1      │
+    │                 │
+    │   🎯 BULLSEYE!  │
+    ╰─────────────────╯
+`,
+		`
+    ╭─────────────────╮
+    │   🚀 PORT       │
+    │   KNOCKER       │
+    │   🎯 1.0.1      │
+    │                 │
+    │   🎪 MAGIC!     │
+    ╰─────────────────╯
+`,
+	}
+
+	for i := 0; i < 3; i++ {
+		fmt.Print("\033[2J\033[H") // Очистка экрана
+		fmt.Println(frames[i%len(frames)])
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	fmt.Println("\n🎉 Поздравляем! Вы нашли пасхалку!")
+	fmt.Println("🎯 Попробуйте: ./port-knocker -t \"tcp:8.8.8.8:8888\"")
+	fmt.Println("🚀 Port Knocker v1.0.1 - теперь с пасхалками!")
+	fmt.Println()
 }

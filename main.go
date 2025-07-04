@@ -7,6 +7,12 @@ import (
 	"port-knocker/cmd"
 )
 
+// Version и BuildTime устанавливаются при сборке через ldflags
+var (
+	Version   = "dev"
+	BuildTime = "unknown"
+)
+
 func main() {
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Ошибка: %v\n", err)
