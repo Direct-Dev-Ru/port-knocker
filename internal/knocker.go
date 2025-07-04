@@ -68,6 +68,11 @@ func (pk *PortKnocker) Execute(configFile, keyFile string, verbose bool, globalW
 		return fmt.Errorf("ошибка загрузки конфигурации: %w", err)
 	}
 
+	return pk.ExecuteWithConfig(config, verbose, globalWaitConnection)
+}
+
+// ExecuteWithConfig выполняет port knocking с готовой конфигурацией
+func (pk *PortKnocker) ExecuteWithConfig(config *Config, verbose bool, globalWaitConnection bool) error {
 	if verbose {
 		fmt.Printf("Загружена конфигурация с %d целей\n", len(config.Targets))
 	}

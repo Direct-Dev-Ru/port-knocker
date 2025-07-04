@@ -68,6 +68,14 @@ example-run: ## Пример запуска с обычной конфигура
 	@echo "$(GREEN)Запуск с обычной конфигурацией...$(NC)"
 	./${BINARY_NAME} -c examples/config.yaml -v
 
+example-inline: ## Пример запуска с инлайн целями
+	@echo "$(GREEN)Запуск с инлайн целями...$(NC)"
+	./${BINARY_NAME} -t "tcp:192.168.1.1:22;tcp:192.168.1.1:80;udp:192.168.1.1:53" -d 500ms -v
+
+example-inline-simple: ## Простой пример с одной целью
+	@echo "$(GREEN)Простой пример с одной целью...$(NC)"
+	./${BINARY_NAME} -t "tcp:127.0.0.1:22" -v
+
 release-tag: ## Создать git tag для release (например: make release-tag VERSION=v1.0.0)
 	@if [ -z "$(VERSION)" ]; then \
 		echo "Использование: make release-tag VERSION=v1.0.0"; \
