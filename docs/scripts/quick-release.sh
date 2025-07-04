@@ -50,6 +50,13 @@ log_info "Начинаем создание релиза $VERSION..."
 # Проверка зависимостей
 log_info "Проверяем зависимости..."
 command -v go >/dev/null 2>&1 || { log_error "Go не установлен"; exit 1; }
+
+# Проверка версии Go
+GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
+log_info "Версия Go: $GO_VERSION"
+if [[ "$(echo -e "1.20\n$GO_VERSION" | sort -V | head -n1)" != "1.20" ]]; then
+    log_warning "Рекомендуется Go 1.20+ для лучшей совместимости"
+fi
 command -v git >/dev/null 2>&1 || { log_error "Git не установлен"; exit 1; }
 command -v tar >/dev/null 2>&1 || { log_error "tar не установлен"; exit 1; }
 command -v zip >/dev/null 2>&1 || { log_error "zip не установлен"; exit 1; }
