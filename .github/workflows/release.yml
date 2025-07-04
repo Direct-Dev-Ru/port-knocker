@@ -58,8 +58,7 @@ jobs:
         BUILD_TIME: ${{ steps.version.outputs.BUILD_TIME }}
       run: |
         BINARY_NAME="port-knocker-${{ matrix.suffix }}"
-        LDFLAGS="-ldflags \"-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -s -w\""
-        go build $LDFLAGS -o $BINARY_NAME .
+        go build -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -s -w" -o $BINARY_NAME .
         
         # Создать архив
         if [[ "${{ matrix.goos }}" == "windows" ]]; then
