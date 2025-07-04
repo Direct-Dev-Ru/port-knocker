@@ -1,0 +1,44 @@
+# Исключить все YAML файлы содержащие "knock" в имени
+*knock*.yaml
+*knock*.yml
+
+# Исключить бинарные файлы
+port-knocker
+port-knocker-*
+*.exe
+
+# Исключить зашифрованные конфиги
+*.encrypted
+
+# Go artifacts
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.temp
+
+# Персональные конфиги и ключи
+key.txt
+*.key
+*secret* 

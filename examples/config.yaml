@@ -1,0 +1,21 @@
+targets:
+  - host: "192.168.1.100"
+    ports: [1000, 2000, 3000]
+    protocol: "tcp"
+    delay: "1s"
+    wait_connection: false
+    gateway: ""
+  
+  - host: "10.0.0.50"
+    ports: [5000, 6000, 7000, 8000]
+    protocol: "udp"
+    delay: "500ms"
+    wait_connection: false
+    gateway: "192.168.1.1"
+  
+  - host: "example.com"
+    ports: [22, 80, 443]
+    protocol: "tcp"
+    delay: "2s"
+    wait_connection: true
+    gateway: "10.0.0.1:8080" 

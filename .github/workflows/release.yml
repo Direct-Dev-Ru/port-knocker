@@ -1,0 +1,134 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: linux-amd64
+          - goos: linux
+            goarch: arm64
+            suffix: linux-arm64
+          - goos: windows
+            goarch: amd64
+            suffix: windows-amd64.exe
+          - goos: darwin
+            goarch: amd64
+            suffix: darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            suffix: darwin-arm64
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Get dependencies
+      run: go mod download
+
+    - name: Get version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')" >> $GITHUB_OUTPUT
+
+    - name: Build
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        VERSION: ${{ steps.version.outputs.VERSION }}
+        BUILD_TIME: ${{ steps.version.outputs.BUILD_TIME }}
+      run: |
+        BINARY_NAME="port-knocker-${{ matrix.suffix }}"
+        LDFLAGS="-ldflags \"-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -s -w\""
+        go build $LDFLAGS -o $BINARY_NAME .
+        
+        # Создать архив
+        if [[ "${{ matrix.goos }}" == "windows" ]]; then
+          zip "${BINARY_NAME}.zip" $BINARY_NAME README.md examples/config.yaml
+        else
+          tar -czf "${BINARY_NAME}.tar.gz" $BINARY_NAME README.md examples/config.yaml
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: port-knocker-${{ matrix.suffix }}
+        path: |
+          port-knocker-${{ matrix.suffix }}*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Port Knocker ${{ github.ref_name }}
+        body: |
+          ## Port Knocker ${{ github.ref_name }}
+          
+          ### Изменения
+          - Обновления и исправления
+          
+          ### Установка
+          
+          Скачайте соответствующий архив для вашей платформы:
+          - **Linux AMD64**: `port-knocker-linux-amd64.tar.gz`
+          - **Linux ARM64**: `port-knocker-linux-arm64.tar.gz`
+          - **Windows AMD64**: `port-knocker-windows-amd64.exe.zip`
+          - **macOS AMD64**: `port-knocker-darwin-amd64.tar.gz`
+          - **macOS ARM64**: `port-knocker-darwin-arm64.tar.gz`
+          
+          ### Использование
+          ```bash
+          # Распакуйте архив и запустите
+          ./port-knocker -c config.yaml -v
+          ```
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      run: |
+        # Загрузить все артефакты как release assets
+        for artifact_dir in */; do
+          if [ -d "$artifact_dir" ]; then
+            cd "$artifact_dir"
+            for file in *; do
+              if [ -f "$file" ]; then
+                echo "Uploading $file"
+                gh release upload "${{ github.ref_name }}" "$file" --clobber
+              fi
+            done
+            cd ..
+          fi
+        done
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
