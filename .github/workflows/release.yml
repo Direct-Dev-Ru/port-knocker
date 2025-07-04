@@ -60,11 +60,11 @@ jobs:
         BINARY_NAME="port-knocker-${{ matrix.suffix }}"
         go build -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -s -w" -o $BINARY_NAME .
         
-        # Создать архив
+        # Создать архив только с бинарником
         if [[ "${{ matrix.goos }}" == "windows" ]]; then
-          zip "${BINARY_NAME}.zip" $BINARY_NAME README.md examples/config.yaml
+          zip "${BINARY_NAME}.zip" $BINARY_NAME
         else
-          tar -czf "${BINARY_NAME}.tar.gz" $BINARY_NAME README.md examples/config.yaml
+          tar -czf "${BINARY_NAME}.tar.gz" $BINARY_NAME
         fi
 
     - name: Upload artifacts
@@ -86,50 +86,47 @@ jobs:
       uses: actions/download-artifact@v4
 
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
+      run: |
+        gh release create "${{ github.ref_name }}" \
+          --title "Port Knocker ${{ github.ref_name }}" \
+          --notes "## Port Knocker ${{ github.ref_name }}
+        
+        ### Изменения
+        - Обновления и исправления
+        - Добавлена поддержка инлайн целей
+        - Исправлена работа с ключами любой длины
+        - Обновлены GitHub Actions до v4
+        
+        ### Установка
+        
+        Скачайте соответствующий архив для вашей платформы:
+        - **Linux AMD64**: \`port-knocker-linux-amd64.tar.gz\`
+        - **Linux ARM64**: \`port-knocker-linux-arm64.tar.gz\`
+        - **Windows AMD64**: \`port-knocker-windows-amd64.exe.zip\`
+        - **macOS AMD64**: \`port-knocker-darwin-amd64.tar.gz\`
+        - **macOS ARM64**: \`port-knocker-darwin-arm64.tar.gz\`
+        
+        ### Использование
+        
+        **Инлайн цели:**
+        \`\`\`bash
+        ./port-knocker -t \"tcp:host:22;tcp:host:80\" -d 1s -v
+        \`\`\`
+        
+        **Конфигурационный файл:**
+        \`\`\`bash
+        ./port-knocker -c config.yaml -v
+        \`\`\`
+        
+        **Шифрование:**
+        \`\`\`bash
+        ./port-knocker encrypt -c config.yaml -o config.encrypted -k key.txt
+        ./port-knocker -c config.encrypted -k key.txt -v
+        \`\`\`" \
+          --draft=false \
+          --prerelease=false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Port Knocker ${{ github.ref_name }}
-        body: |
-          ## Port Knocker ${{ github.ref_name }}
-          
-          ### Изменения
-          - Обновления и исправления
-          - Добавлена поддержка инлайн целей
-          - Исправлена работа с ключами любой длины
-          - Обновлены GitHub Actions до v4
-          
-          ### Установка
-          
-          Скачайте соответствующий архив для вашей платформы:
-          - **Linux AMD64**: `port-knocker-linux-amd64.tar.gz`
-          - **Linux ARM64**: `port-knocker-linux-arm64.tar.gz`
-          - **Windows AMD64**: `port-knocker-windows-amd64.exe.zip`
-          - **macOS AMD64**: `port-knocker-darwin-amd64.tar.gz`
-          - **macOS ARM64**: `port-knocker-darwin-arm64.tar.gz`
-          
-          ### Использование
-          
-          **Инлайн цели:**
-          ```bash
-          ./port-knocker -t "tcp:host:22;tcp:host:80" -d 1s -v
-          ```
-          
-          **Конфигурационный файл:**
-          ```bash
-          ./port-knocker -c config.yaml -v
-          ```
-          
-          **Шифрование:**
-          ```bash
-          ./port-knocker encrypt -c config.yaml -o config.encrypted -k key.txt
-          ./port-knocker -c config.encrypted -k key.txt -v
-          ```
-        draft: false
-        prerelease: false
 
     - name: Upload Release Assets
       run: |
