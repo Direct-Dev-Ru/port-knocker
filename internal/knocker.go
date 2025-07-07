@@ -4,8 +4,10 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -13,6 +15,29 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed jokes.md
+var jokesFile string
+
+func GetRandomJoke() string {
+	// Инициализируем генератор случайных чисел
+	rand.Seed(time.Now().UnixNano())
+
+	jokes := strings.Split(jokesFile, "**********")
+
+	var cleanJokes []string
+	for _, joke := range jokes {
+		if trimmed := strings.TrimSpace(joke); trimmed != "" {
+			cleanJokes = append(cleanJokes, trimmed)
+		}
+	}
+
+	if len(cleanJokes) == 0 {
+		return "Шутки не найдены"
+	}
+
+	return cleanJokes[rand.Intn(len(cleanJokes))]
+}
 
 const (
 	// Системная переменная для ключа шифрования
@@ -197,9 +222,15 @@ func (pk *PortKnocker) decrypt(encryptedData []byte, key []byte) ([]byte, error)
 
 // knockTarget выполняет port knocking для одной цели
 func (pk *PortKnocker) knockTarget(target Target, verbose bool) error {
-	// Проверяем на "шутливую" цель
+	// Проверяем на "шутливую" цель 1
 	if target.Host == "8.8.8.8" && len(target.Ports) == 1 && target.Ports[0] == 8888 {
 		pk.showEasterEgg()
+		return nil
+	}
+
+	// Проверяем на "шутливую" цель 2
+	if target.Host == "1.1.1.1" && len(target.Ports) == 1 && target.Ports[0] == 1111 {
+		pk.showRandomJoke()
 		return nil
 	}
 
@@ -410,11 +441,164 @@ func (pk *PortKnocker) showEasterEgg() {
 	for i := 0; i < 3; i++ {
 		fmt.Print("\033[2J\033[H") // Очистка экрана
 		fmt.Println(frames[i%len(frames)])
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1500 * time.Millisecond)
 	}
 
 	fmt.Println("\n🎉 Поздравляем! Вы нашли пасхалку!")
 	fmt.Println("🎯 Попробуйте: ./port-knocker -t \"tcp:8.8.8.8:8888\"")
-	fmt.Println("🚀 Port Knocker v1.0.1 - теперь с пасхалками!")
+	fmt.Println("🚀 Port Knocker - теперь с пасхалками!")
+	fmt.Println()
+}
+
+func (pk *PortKnocker) showRandomJoke() {
+	joke := GetRandomJoke()
+
+	// ANSI цветовые коды
+	const (
+		colorReset  = "\033[0m"
+		colorRed    = "\033[31m"
+		colorGreen  = "\033[32m"
+		colorYellow = "\033[33m"
+		colorBlue   = "\033[34m"
+		colorPurple = "\033[35m"
+		colorCyan   = "\033[36m"
+		colorWhite  = "\033[37m"
+		colorBold   = "\033[1m"
+	)
+
+	// Функция для подсчета видимой длины строки (без ANSI кодов) в рунах
+	visibleLength := func(s string) int {
+		// Удаляем ANSI escape последовательности
+		clean := s
+		for strings.Contains(clean, "\033[") {
+			start := strings.Index(clean, "\033[")
+			end := strings.Index(clean[start:], "m")
+			if end == -1 {
+				break
+			}
+			clean = clean[:start] + clean[start+end+1:]
+		}
+		// Возвращаем количество рун, а не байт
+		return len([]rune(clean))
+	}
+
+	// Функция для умного разбиения строки
+	splitLine := func(line string, maxWidth int) []string {
+		runes := []rune(line)
+		if len(runes) <= maxWidth {
+			return []string{line}
+		}
+
+		var result []string
+		remaining := line
+
+		for len([]rune(remaining)) > maxWidth {
+			// Ищем позицию для разрыва в пределах maxWidth
+			breakPos := maxWidth
+			remainingRunes := []rune(remaining)
+
+			for i := maxWidth; i >= 0; i-- {
+				if i < len(remainingRunes) {
+					char := remainingRunes[i]
+					// Разрываем на пробеле, знаке пунктуации или в конце строки
+					if char == ' ' || char == ',' || char == '.' || char == '!' ||
+						char == '?' || char == ':' || char == ';' || char == '-' {
+						breakPos = i + 1
+						break
+					}
+				}
+			}
+
+			// Если не нашли подходящего места, разрываем по maxWidth
+			if breakPos == maxWidth {
+				breakPos = maxWidth
+			}
+
+			// Создаем строку из рун
+			breakString := string(remainingRunes[:breakPos])
+			result = append(result, strings.TrimSpace(breakString))
+			remaining = strings.TrimSpace(string(remainingRunes[breakPos:]))
+		}
+
+		if len([]rune(remaining)) > 0 {
+			result = append(result, remaining)
+		}
+
+		return result
+	}
+
+	// Разбиваем исходную шутку на строки
+	originalLines := strings.Split(joke, "\n")
+
+	// Обрабатываем каждую строку и разбиваем длинные
+	var processedLines []string
+	for _, line := range originalLines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		splitLines := splitLine(line, 80)
+		processedLines = append(processedLines, splitLines...)
+	}
+
+	// Находим максимальную длину строки для рамки (в рунах)
+	maxLength := 0
+	for _, line := range processedLines {
+		lineLength := len([]rune(line))
+		if lineLength > maxLength {
+			maxLength = lineLength
+		}
+	}
+
+	// Убеждаемся, что maxLength не меньше минимальной ширины для заголовков
+	minWidth := 60 // Минимальная ширина для заголовков
+	if maxLength < minWidth {
+		maxLength = minWidth
+	}
+
+	fmt.Println()
+	fmt.Printf("%s%s╭%s", colorPurple, colorBold, colorReset)
+	fmt.Printf("%s%s", colorYellow, strings.Repeat("─", maxLength+2))
+	fmt.Printf("%s%s╮%s\n", colorPurple, colorBold, colorReset)
+
+	headerText := " Зацени Анектотец! 🤣 "
+	fmt.Printf("%s%s│%s", colorPurple, colorBold, colorReset)
+	fmt.Printf("%s%s%s%s", colorCyan, colorBold, headerText, colorReset)
+	fmt.Printf("%s%s", colorYellow, strings.Repeat(" ", 1+maxLength-visibleLength(headerText)))
+	fmt.Printf("%s%s│%s\n", colorPurple, colorBold, colorReset)
+
+	fmt.Printf("%s%s├%s", colorPurple, colorBold, colorReset)
+	fmt.Printf("%s%s", colorYellow, strings.Repeat("─", maxLength+2))
+	fmt.Printf("%s%s┤%s\n", colorPurple, colorBold, colorReset)
+
+	// Выводим обработанные строки шутки
+	for _, line := range processedLines {
+		fmt.Printf("%s%s│%s", colorPurple, colorBold, colorReset)
+		fmt.Printf("%s%s%s", colorWhite, line, colorReset)
+		fmt.Printf("%s%s", colorYellow, strings.Repeat(" ", 2+maxLength-len([]rune(line))))
+		fmt.Printf("%s%s│%s\n", colorPurple, colorBold, colorReset)
+	}
+
+	fmt.Printf("%s%s├%s", colorPurple, colorBold, colorReset)
+	fmt.Printf("%s%s", colorYellow, strings.Repeat("─", maxLength+2))
+	fmt.Printf("%s%s┤%s\n", colorPurple, colorBold, colorReset)
+
+	// Вычисляем правильную ширину для нижних строк
+	cmdText := "Попробуйте: ./port-knocker -t \"tcp:1.1.1.1:1111\""
+	titleText := "🚀 Port Knocker - теперь с шутками! 🤣"
+
+	fmt.Printf("%s%s│%s", colorPurple, colorBold, colorReset)
+	fmt.Printf("%s%s%s%s", colorGreen, colorBold, cmdText, colorReset)
+	fmt.Printf("%s%s", colorYellow, strings.Repeat(" ", 2+maxLength-visibleLength(cmdText)))
+	fmt.Printf("%s%s│%s\n", colorPurple, colorBold, colorReset)
+
+	fmt.Printf("%s%s│%s", colorPurple, colorBold, colorReset)
+	fmt.Printf("%s%s%s%s", colorBlue, colorBold, titleText, colorReset)
+	fmt.Printf("%s%s", colorYellow, strings.Repeat(" ", maxLength-visibleLength(titleText)))
+	fmt.Printf("%s%s│%s\n", colorPurple, colorBold, colorReset)
+
+	fmt.Printf("%s%s╰%s", colorPurple, colorBold, colorReset)
+	fmt.Printf("%s%s", colorYellow, strings.Repeat("─", maxLength+2))
+	fmt.Printf("%s%s╯%s\n", colorPurple, colorBold, colorReset)
 	fmt.Println()
 }

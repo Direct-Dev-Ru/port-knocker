@@ -148,6 +148,7 @@ git push origin v1.0.2
 
 ```bash
 # Создать тег через make
+git tag -d v1.0.2 && git push origin :refs/tags/v1.0.2
 make release-tag VERSION=v1.0.2
 ```
 
