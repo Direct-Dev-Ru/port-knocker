@@ -57,7 +57,7 @@
 
 ```bash
 # 1. Обновить версию
-VERSION="1.0.4"
+VERSION="1.0.5"
 sed -i "s/Version.*=.*\".*\"/Version   = \"$VERSION\"/" main.go
 
 # 2. Собрать и создать релиз
