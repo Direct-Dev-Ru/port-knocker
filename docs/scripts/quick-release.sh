@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Скрипт для быстрого создания релиза Port Knocker
-# Использование: ./docs/scripts/quick-release.sh v1.0.4
+# Использование: ./docs/scripts/quick-release.sh v1.0.7
 
 set -e
 
