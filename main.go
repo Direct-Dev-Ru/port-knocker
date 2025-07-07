@@ -9,7 +9,7 @@ import (
 
 // Version и BuildTime устанавливаются при сборке через ldflags
 var (
-	Version   = "v1.0.7"
+	Version   = "v1.0.10"
 	BuildTime = "unknown"
 )
 

@@ -49,7 +49,10 @@ log_info "Начинаем создание релиза $VERSION..."
 
 # Проверка зависимостей
 log_info "Проверяем зависимости..."
-command -v go >/dev/null 2>&1 || { log_error "Go не установлен"; exit 1; }
+command -v go >/dev/null 2>&1 || {
+    log_error "Go не установлен"
+    exit 1
+}
 
 # Проверка версии Go
 GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
@@ -57,9 +60,18 @@ log_info "Версия Go: $GO_VERSION"
 if [[ "$(echo -e "1.20\n$GO_VERSION" | sort -V | head -n1)" != "1.20" ]]; then
     log_warning "Рекомендуется Go 1.20+ для лучшей совместимости"
 fi
-command -v git >/dev/null 2>&1 || { log_error "Git не установлен"; exit 1; }
-command -v tar >/dev/null 2>&1 || { log_error "tar не установлен"; exit 1; }
-command -v zip >/dev/null 2>&1 || { log_error "zip не установлен"; exit 1; }
+command -v git >/dev/null 2>&1 || {
+    log_error "Git не установлен"
+    exit 1
+}
+command -v tar >/dev/null 2>&1 || {
+    log_error "tar не установлен"
+    exit 1
+}
+command -v zip >/dev/null 2>&1 || {
+    log_error "zip не установлен"
+    exit 1
+}
 
 # Проверка статуса git
 log_info "Проверяем статус Git..."
@@ -108,22 +120,22 @@ build_for_platform() {
     local arch=$2
     local suffix=$3
     local binary_name="port-knocker-$suffix"
-    
+
     log_info "Собираем для $os/$arch..."
     GOOS=$os GOARCH=$arch go build \
         -ldflags "-X main.Version=${VERSION_NUM} -X main.BuildTime=${BUILD_TIME} -s -w" \
         -o "$binary_name" .
-    
+
     # Создание архива
     if [[ "$os" == "windows" ]]; then
         zip "${binary_name}.zip" "$binary_name"
     else
         tar -czf "${binary_name}.tar.gz" "$binary_name"
     fi
-    
+
     # Удаление бинарника
     rm "$binary_name"
-    
+
     log_success "Создан архив для $os/$arch"
 }
 
@@ -140,64 +152,31 @@ ls -la port-knocker-*
 
 # Создание Git тега
 log_info "Создаем Git тег..."
-git tag -a "$VERSION" -m "Release $VERSION
+# Читаем release-notes.md и сохраняем содержимое в переменную NOTES
+NOTES=$(cat docs/scripts/release-notes.md)
+# Заменяем все переменные вида $VERSION в NOTES на их значения
+NOTES=$(echo "$NOTES" | sed "s/\\\$VERSION/$VERSION/g")
 
-## Изменения
-- Обновления и исправления
-- Улучшения производительности
-- Обновлена документация
-
-## Установка
-Скачайте соответствующий архив для вашей платформы:
-- Linux AMD64: port-knocker-linux-amd64.tar.gz
-- Linux ARM64: port-knocker-linux-arm64.tar.gz
-- Windows AMD64: port-knocker-windows-amd64.exe.zip
-- macOS AMD64: port-knocker-darwin-amd64.tar.gz
-- macOS ARM64: port-knocker-darwin-arm64.tar.gz"
+git tag -a "$VERSION" -m "$NOTES"
 
 git push origin "$VERSION"
 
 # Проверка GitHub CLI
 if command -v gh >/dev/null 2>&1; then
     log_info "GitHub CLI найден. Создаем релиз..."
-    
+
     # Проверка авторизации
     if gh auth status >/dev/null 2>&1; then
         log_info "Создаем релиз на GitHub..."
         gh release create "$VERSION" \
             --title "Port Knocker $VERSION" \
-            --notes "## Port Knocker $VERSION
-
-### Изменения
-- Обновления и исправления
-- Улучшения производительности
-- Обновлена документация
-
-### Установка
-Скачайте соответствующий архив для вашей платформы:
-- **Linux AMD64**: \`port-knocker-linux-amd64.tar.gz\`
-- **Linux ARM64**: \`port-knocker-linux-arm64.tar.gz\`
-- **Windows AMD64**: \`port-knocker-windows-amd64.exe.zip\`
-- **macOS AMD64**: \`port-knocker-darwin-amd64.tar.gz\`
-- **macOS ARM64**: \`port-knocker-darwin-arm64.tar.gz\`
-
-### Использование
-\`\`\`bash
-# Инлайн цели
-./port-knocker -t \"tcp:host:port;udp:host:port\" -v
-
-# Конфигурационный файл
-./port-knocker -c config.yaml -v
-
-# Пасхалка
-./port-knocker -t \"tcp:8.8.8.8:8888\" -v
-\`\`\`" \
+            --notes "$NOTES" \
             --draft=false \
             --prerelease=false
-        
+
         log_info "Загружаем бинарники..."
         gh release upload "$VERSION" port-knocker-*.tar.gz port-knocker-*.zip
-        
+
         log_success "Релиз $VERSION создан и опубликован на GitHub!"
     else
         log_warning "GitHub CLI не авторизован. Создайте релиз вручную."
@@ -222,4 +201,4 @@ echo
 log_info "Следующие шаги:"
 echo "1. Проверьте релиз на GitHub"
 echo "2. Протестируйте скачанные бинарники"
-echo "3. Обновите документацию если нужно" 
+echo "3. Обновите документацию если нужно"

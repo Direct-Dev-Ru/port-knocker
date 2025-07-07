@@ -129,19 +129,23 @@ gh release upload v1.0.3 port-knocker-*.tar.gz port-knocker-*.zip
 ```
 
 ### 📋 Изменения в API
+
 - Нет критических изменений
 - Обратная совместимость сохранена
 
 ### 🔍 Известные проблемы
+
 - Нет известных проблем
 
 ### 🙏 Благодарности
+
 Спасибо всем участникам и пользователям!
-```
+
+```bash
 
 ## Полезные ссылки
 
 - [Подробная инструкция](manual-release.md)
 - [GitHub Releases](https://github.com/Direct-Dev-Ru/port-knocker/releases)
 - [GitHub Actions](https://github.com/Direct-Dev-Ru/port-knocker/actions)
-- [Issues](https://github.com/Direct-Dev-Ru/port-knocker/issues) 
+- [Issues](https://github.com/Direct-Dev-Ru/port-knocker/issues)
